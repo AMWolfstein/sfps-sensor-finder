@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace "com.example.poweroverlay"
+    namespace "com.example.poweroverlay"   // ✅ match your package name
     compileSdk 34
 
     defaultConfig {
@@ -24,7 +24,16 @@ android {
 }
 
 dependencies {
+    // ✅ Kotlin standard library
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
+
+    // ✅ AndroidX core + appcompat
+    implementation "androidx.core:core-ktx:1.12.0"
     implementation "androidx.appcompat:appcompat:1.6.1"
+
+    // ✅ Material Design components
     implementation "com.google.android.material:material:1.9.0"
+
+    // ✅ ConstraintLayout (common UI dependency)
+    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
 }
