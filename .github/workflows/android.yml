@@ -37,6 +37,10 @@ jobs:
             -o gradle/wrapper/gradle-wrapper.jar
         fi
 
+    # ✅ Ensure wrapper script is executable
+    - name: Make Gradle wrapper executable
+      run: chmod +x ./gradlew
+
     # ✅ Build Debug APK with wrapper for reproducibility
     - name: Build Debug APK
       run: ./gradlew assembleDebug
@@ -75,6 +79,9 @@ jobs:
           curl -sL https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar \
             -o gradle/wrapper/gradle-wrapper.jar
         fi
+
+    - name: Make Gradle wrapper executable
+      run: chmod +x ./gradlew
 
     - name: Build Release APK
       run: ./gradlew assembleRelease
