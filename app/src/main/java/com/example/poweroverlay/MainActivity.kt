@@ -7,6 +7,8 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -15,25 +17,7 @@ class MainActivity : AppCompatActivity() {
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Intent.ACTION_SCREEN_ON || intent?.action == Intent.ACTION_SCREEN_OFF) {
-                // Fetch sensor props when power button toggles screen
-                val resId = resources.getIdentifier("config_sfps_sensor_props_0", "array", "android")
-                if (resId != 0) {
-                    val sensorProps = resources.getStringArray(resId)
-                    // sensorProps[1] = X, sensorProps[2] = Y, sensorProps[3] = Radius
-                    val x = sensorProps[1].toFloat()
-                    val y = sensorProps[2].toFloat()
-                    val r = sensorProps[3].toFloat()
-
-                    overlayView.updateSensorProps(x, y, r)
-
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Sensor detected at X=$x, Y=$y, R=$r",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } else {
-                    Toast.makeText(this@MainActivity, "Sensor props not found", Toast.LENGTH_SHORT).show()
-                }
+                saveSensorPropsToFile()
             }
         }
     }
@@ -53,5 +37,30 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(screenReceiver)
+    }
+
+    private fun saveSensorPropsToFile() {
+        val resId = resources.getIdentifier("config_sfps_sensor_props_0", "array", "android")
+        if (resId != 0) {
+            val sensorProps = resources.getStringArray(resId)
+            val x = sensorProps[1]
+            val y = sensorProps[2]
+            val r = sensorProps[3]
+
+            // Update overlay
+            overlayView.updateSensorProps(x.toFloat(), y.toFloat(), r.toFloat())
+
+            // Save to file in app's internal storage
+            val fileName = "sensor_props.txt"
+            val file = File(filesDir, fileName)
+            val content = "Sensor Props:\nX=$x\nY=$y\nR=$r\n"
+            FileOutputStream(file).use {
+                it.write(content.toByteArray())
+            }
+
+            Toast.makeText(this, "Saved sensor props to $fileName", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "Sensor props not found", Toast.LENGTH_SHORT).show()
+        }
     }
 }
