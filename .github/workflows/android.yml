@@ -11,6 +11,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # ✅ Checkout source code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # ✅ Set up JDK 17
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    # ✅ Gradle cache with fallback
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      continue-on-error: true
+
+    # ✅ Fallback: download wrapper JAR if missing
+    - name: Ensure Gradle wrapper JAR
+      run: |
+        mkdir -p gradle/wrapper
+        if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+          echo "Downloading Gradle wrapper JAR fallback..."
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar \
+            -o gradle/wrapper/gradle-wrapper.jar
+        fi
+
+    # ✅ Build Debug APK with wrapper for reproducibility
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+
+    # ✅ Upload Debug APK as artifact
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: app/build/outputs/apk/debug/app-debug.apk
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -24,17 +67,27 @@ jobs:
       uses: gradle/gradle-build-action@v2
       continue-on-error: true
 
-    - name: Download Gradle wrapper JAR (fallback)
+    - name: Ensure Gradle wrapper JAR
       run: |
         mkdir -p gradle/wrapper
-        curl -sL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o gradle-8.7-bin.zip
-        unzip -j gradle-8.7-bin.zip gradle-8.7/lib/plugins/gradle-wrapper.jar -d gradle/wrapper
+        if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+          echo "Downloading Gradle wrapper JAR fallback..."
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar \
+            -o gradle/wrapper/gradle-wrapper.jar
+        fi
 
-    - name: Build APK
-      run: ./gradlew assembleDebug
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
 
-    - name: Upload APK
+    - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: app-release
+        path: app/build/outputs/apk/release/app-release.apk
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: app/build/outputs/apk/release/app-release.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
